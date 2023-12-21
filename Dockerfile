@@ -1,23 +1,17 @@
-FROM node:latest
+FROM alpine AS builder
+RUN apk add --no-cache nodejs npm git
 
-WORKDIR /home/choreouser
+RUN npm install npm -g
 
-EXPOSE 3000
+RUN adduser -D app
+USER app
+WORKDIR /home/app
 
-COPY files/* /home/choreouser/
+RUN git clone https://github.com/louislam/uptime-kuma.git
+WORKDIR /home/app/uptime-kuma
+RUN npm run setup
 
-ENV PM2_HOME=/tmp
+VOLUME [".data"]
 
-RUN apt-get update &&\
-    apt install --only-upgrade linux-libc-dev &&\
-    apt-get install -y iproute2 vim netcat-openbsd &&\
-    npm install -g pm2 &&\
-    addgroup --gid 10008 choreo &&\
-    adduser --disabled-password  --no-create-home --uid 10008 --ingroup choreo choreouser &&\
-    usermod -aG sudo choreouser &&\
-    chmod +x index.js start.sh server &&\
-    npm install
-
-CMD [ "node", "index.js" ]
-
-USER 10008
+EXPOSE 3001
+CMD ["node", "server/server.js"]
